@@ -65,7 +65,7 @@ def parse_virtual_hosts(config_file):
 
     routes = {}
     for host, block in host_blocks:
-        proxy_map = {}
+        proxy_map = {}      # Dictionary {key: host, value: [proxy_pass]}
 
         # Find all proxy_pass entries
         proxy_passes = re.findall(r'proxy_pass\s+http://([^\s;]+);', block)
@@ -85,21 +85,71 @@ def parse_virtual_hosts(config_file):
         # TODO: this policy varies among scenarios 
         #       the default policy is provided with one proxy_pass
         #       In the multi alternatives of proxy_pass then
-        #       the policy is applied to identify the highes matching
+        #       the policy is applied to identify the highest matching
         #       proxy_pass
         #
-        if len(proxy_map.get(host,[])) == 1:
+        if len(proxy_map.get(host,[])) == 1:    # In case of 1 proxy_pass
             routes[host] = (proxy_map.get(host,[])[0], dist_policy_map)
         # esle if:
         #         TODO:  apply further policy matching here
         #
         else:
             routes[host] = (proxy_map.get(host,[]), dist_policy_map)
-
-    for key, value in routes.items():
-        print(key, value)
+    print("Loaded virtual proxy routes:")
+    for host, (targets, policy) in routes.items():
+        print("{} -> {}, policy: {}".format(host, targets, policy))
     return routes
 
+    # for key, value in routes.items():
+    #     print(key, value)
+    # return routes
+
+### UTILITIES ###
+def build_balancer(routes: dict) -> dict:
+    """
+    Builds load balancer structures to track current backend index for each host.
+
+    :params routes (dict): dictionary mapping hostnames and location.
+    :rtype dict: mapping hostnames to their load balancer state.
+    """
+    balancer = {}
+    for host, (targets, policy) in routes.items():
+        if isinstance(targets, list) and policy == "round-robin":
+            balancer[host] = {
+                'targets': targets,
+                'index': 0,
+                'policy': policy
+            }
+        else:
+            balancer[host] = {
+                'targets': [targets],
+                'index': 0,
+                'policy': policy
+            }
+    return balancer
+
+def get_next_backend(host, balancer):
+    """
+    Retrieves the next backend server for a given hostname based on the load balancing policy.
+
+    :params host (str): The hostname for which to get the next backend.
+    :params balancer (dict): The load balancer state for all hostnames.
+    :rtype tuple: (backend_host, backend_port)
+    """
+    if host not in balancer:
+        return None, None
+
+    entry = balancer[host]      # Get the balancer entry for the host
+    targets = entry['targets']
+    curr_idx = entry['index']
+    policy = entry['policy']
+
+    if policy == "round-robin":
+        backend = targets[curr_idx]
+        entry['index'] = (curr_idx + 1) % len(targets)  # Round-robin update
+    else:
+        backend = targets[0]  # Default to first target if no policy matched
+    return backend
 
 if __name__ == "__main__":
     """
@@ -121,6 +171,9 @@ if __name__ == "__main__":
     ip = args.server_ip
     port = args.server_port
 
+    #! 1. Parse config file
     routes = parse_virtual_hosts("config/proxy.conf")
-
-    create_proxy(ip, port, routes)
+    #! 2. Build the balancer
+    balancer: dict = build_balancer(routes)
+    #! 3. Pass to create_proxy
+    create_proxy(ip, port, balancer)
