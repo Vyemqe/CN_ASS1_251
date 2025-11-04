@@ -90,15 +90,15 @@ def resolve_routing_policy(hostname, routes):
 
     print(hostname)
     proxy_map, policy = routes.get(hostname,('127.0.0.1:9000','round-robin'))
-    print proxy_map
-    print policy
+    print (proxy_map)
+    print (policy)
 
     proxy_host = ''
     proxy_port = '9000'
     if isinstance(proxy_map, list):
         if len(proxy_map) == 0:
             print("[Proxy] Emtpy resolved routing of hostname {}".format(hostname))
-            print "Empty proxy_map result"
+            print ("Empty proxy_map result")
             # TODO: implement the error handling for non mapped host
             #       the policy is design by team, but it can be 
             #       basic default host in your self-defined system
@@ -194,6 +194,9 @@ def run_proxy(ip, port, routes):
         print("[Proxy] Listening on IP {} port {}".format(ip,port))
         while True:
             conn, addr = proxy.accept()
+            t = threading.Thread(target=handle_client, args=(ip, port, conn, addr, routes))
+            t.daemon = True
+            t.start()
             #
             #  TODO: implement the step of the client incomping connection
             #        using multi-thread programming with the
