@@ -110,6 +110,33 @@ class HttpAdapter:
         if req.hook:
             print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
             req.hook(headers = "bksysnet",body = "get in touch")
+        body = req.body or ""
+        form = {}
+        for pair in body.split("&"):
+            if "=" in pair:
+                k, v = pair.split("=", 1)
+                form[k] = v
+
+        # Handle /login POST
+        if req.path == "/login" and req.method == "POST":
+            username = form.get("username", "")
+            password = form.get("password", "")
+
+            if username == "admin" and password == "password":
+                resp.status_code = 200
+                resp.reason = "OK"
+                resp.headers["Content-Type"] = "text/html"
+                resp.headers["Set-Cookie"] = "auth=true"
+                resp._content = b"<h1>Login success</h1>"
+            else:
+                resp.status_code = 401
+                resp.reason = "Unauthorized"
+                resp.headers["Content-Type"] = "text/html"
+                resp._content = b"<h1>401 Unauthorized</h1>"
+
+            conn.sendall(resp.build_response(req))
+            conn.close()
+            return
             #
             # TODO: handle for App hook here
             #
