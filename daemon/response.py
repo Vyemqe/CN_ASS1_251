@@ -310,7 +310,7 @@ class Response():
             base_dir = self.prepare_content_type(mime_type = 'text/html')
         elif mime_type == 'text/css':
             base_dir = self.prepare_content_type(mime_type = 'text/css')
-        # No addtion for now
+        # No addition for now
         else:
             return self.build_notfound()
 
