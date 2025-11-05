@@ -136,8 +136,7 @@ class Request():
             # ...
             #
             # Try some common wildcard to return hook from routes: dict
-            if hook is None:
-                hook = routes.get(('*', self.path))
+            hook = routes.get(('*', self.path))
             if hook is None:
                 hook = routes.get((self.method, '*'))
             if hook is None:
