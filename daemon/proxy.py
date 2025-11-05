@@ -99,7 +99,7 @@ def resolve_routing_policy(hostname, routes):
         if len(proxy_map) == 0:
             print("[Proxy] Emtpy resolved routing of hostname {}".format(hostname))
             print("Empty proxy_map result")
-            # TODO: implement the error handling for non-mapped host
+            # TODO: implement the error handling for non mapped host
             #       the policy is design by team, but it can be 
             #       basic default host in your self-defined system
             # Use a dummy host to raise an invalid connection
@@ -199,6 +199,16 @@ def run_proxy(ip, port, routes):
             #        using multi-thread programming with the
             #        provided handle_client routine
             #
+            try:
+                print("[Proxy] ('{}', {}) at Host: {}:{}".format(addr[0], addr[1], ip, port))
+                clientThread = threading.Thread(
+                    target=handle_client,
+                    args=(ip, port, conn, addr, routes),
+                    daemon = True
+                )
+                clientThread.start()
+            except Exception as e:
+                print("[Proxy] Error starting client thread: {}".format(e))
     except socket.error as e:
       print("Socket error: {}".format(e))
 

@@ -59,6 +59,7 @@ def parse_virtual_hosts(config_file):
         config_text = f.read()
 
     # Match each host block
+    # host "<IP in here>" {<code block>}
     host_blocks = re.findall(r'host\s+"([^"]+)"\s*\{(.*?)\}', config_text, re.DOTALL)
 
     dist_policy_map = ""
@@ -141,12 +142,13 @@ def get_next_backend(host, balancer):
 
     entry = balancer[host]      # Get the balancer entry for the host
     targets = entry['targets']
-    curr_idx = entry['index']
+    # curr_idx = entry['index'] # Don't need this, just update the actual index from entry, 
+                                # or else you need curr_idx=entry['index'] after entry['index']+=1
     policy = entry['policy']
 
     if policy == "round-robin":
-        backend = targets[curr_idx]
-        entry['index'] = (curr_idx + 1) % len(targets)  # Round-robin update
+        backend = targets[entry['index']]
+        entry['index'] = (entry['index'] + 1) % len(targets)  # Round-robin update
     else:
         backend = targets[0]  # Default to first target if no policy matched
     return backend

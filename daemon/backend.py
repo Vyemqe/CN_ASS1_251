@@ -74,8 +74,8 @@ def run_backend(ip, port, routes):
     :param port (int): Port number to listen on.
     :param routes (dict): Dictionary of route handlers.
     """
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)      # IPv4 and TCP
+    # print("[Backend] Starting backend server on {}:{}".format(ip, port))
     try:
         server.bind((ip, port))
         server.listen(50)
@@ -90,6 +90,16 @@ def run_backend(ip, port, routes):
             #        using multi-thread programming with the
             #        provided handle_client routine
             #
+            try:
+                print("[Backend] Accepted connection from {}:{}".format(addr[0], addr[1]))
+                clientThread = threading.Thread(
+                    target=handle_client,
+                    args=(ip, port, conn, addr, routes),
+                    daemon = True
+                )
+                clientThread.start()
+            except Exception as e:
+                print("[Backend] Error starting client thread: {}".format(e))
     except socket.error as e:
       print("Socket error: {}".format(e))
 
