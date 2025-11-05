@@ -306,23 +306,15 @@ class Response():
         #
         # TODO: add support objects
         #
-        try:
-            base_dir = self.prepare_content_type(mime_type)
-            c_len, self._content = self.build_content(path, base_dir)
-            self._header = self.build_response_header(request)
-            return self._header + self._content
-        except Exception as e:
-            print(f"[Response] Error building response: {e}")
+        if path.endswith('.html') or mime_type == 'text/html':
+            base_dir = self.prepare_content_type(mime_type = 'text/html')
+        elif mime_type == 'text/css':
+            base_dir = self.prepare_content_type(mime_type = 'text/css')
+        # No addition for now
+        else:
             return self.build_notfound()
-        # JUST IN CASE
-        # if path.endswith('.html') or mime_type == 'text/html':
-        #     base_dir = self.prepare_content_type(mime_type = 'text/html')
-        # elif mime_type == 'text/css':
-        #     base_dir = self.prepare_content_type(mime_type = 'text/css')
-        # else:
-        #     return self.build_notfound()
 
-        # c_len, self._content = self.build_content(path, base_dir)
-        # self._header = self.build_response_header(request)
+        c_len, self._content = self.build_content(path, base_dir)
+        self._header = self.build_response_header(request)
 
-        # return self._header + self._content
+        return self._header + self._content
