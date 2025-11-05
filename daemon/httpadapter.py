@@ -114,8 +114,8 @@ class HttpAdapter:
         form = {}
         for pair in body.split("&"):
             if "=" in pair:
-                k, v = pair.split("=", 1)
-                form[k] = v
+                key, value = pair.split("=", 1)
+                form[key] = value
 
         # Handle /login POST
         if req.path == "/login" and req.method == "POST":

@@ -199,6 +199,16 @@ def run_proxy(ip, port, routes):
             #        using multi-thread programming with the
             #        provided handle_client routine
             #
+            try:
+                print("[Proxy] ('{}', {}) at Host: {}:{}".format(addr[0], addr[1], ip, port))
+                clientThread = threading.Thread(
+                    target=handle_client,
+                    args=(ip, port, conn, addr, routes),
+                    daemon = True
+                )
+                clientThread.start()
+            except Exception as e:
+                print("[Proxy] Error starting client thread: {}".format(e))
     except socket.error as e:
       print("Socket error: {}".format(e))
 
