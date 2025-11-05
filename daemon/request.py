@@ -136,8 +136,8 @@ class Request():
             # ...
             #
             # Try some common wildcard to return hook from routes: dict
-            if hook is None:
-                hook = routes.get(('*', self.path))
+            # Wildcard seems dangerous to be used for hook (Ngoc)
+            hook = routes.get(('*', self.path))
             if hook is None:
                 hook = routes.get((self.method, '*'))
             if hook is None:
@@ -221,24 +221,16 @@ class Request():
             # Join all parts with carriage return and newline feed
             body_bytes = b"\r\n".join(lines) + b"\r\n"
             self.body = body_bytes
-            self.prepare_content_length(self.body)
-            return self
-
         #! No files --> form-urlencoded
-        if data:
+        elif data:
             encoded = urlencode(data)
             self.headers["Content-Type"] = "application/x-www-form-urlencoded"
             self.body = encoded
-            self.prepare_content_length(self.body)
-            return self
-        # Empty body
-        self.body = None
+        #! No files and no data
+        else:
+            self.body = None
         self.prepare_content_length(self.body)
         return self
-        #   
-        # TODO prepare the request authentication
-        #
-	# self.auth = ...
 
     def prepare_content_length(self, body):
         if self.headers is None:
