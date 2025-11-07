@@ -40,7 +40,8 @@ import threading
 import argparse
 import re
 from urllib.parse import urlparse
-from collections import defaultdict
+#from collections import defaultdict
+
 
 from daemon import create_proxy
 
@@ -93,11 +94,19 @@ def parse_virtual_hosts(config_file):
         # esle if:
         #         TODO:  apply further policy matching here
         #
-        else:
-            routes[host] = (proxy_map.get(host,[]), dist_policy_map)
-    print("Loaded virtual proxy routes:")
-    for host, (targets, policy) in routes.items():
-        print("{} -> {}, policy: {}".format(host, targets, policy))
+
+
+        # else:
+        #     routes[host] = (proxy_map.get(host,[]), dist_policy_map)
+        if (len(proxy_passes) == 1):        # 1 proxy
+            routes[host] = (proxy_passes[0], dist_policy_map)
+        else:                               # multiple proxies
+            routes[host] = (proxy_passes, dist_policy_map)
+    # print("Loaded virtual proxy routes:")
+    # for host, (targets, policy) in routes.items():
+    #     print("{} -> {}, policy: {}".format(host, targets, policy))
+    print("{} ({}, {})".format(host, routes[host], dist_policy_map))
+
     return routes
 
     # for key, value in routes.items():
@@ -174,6 +183,6 @@ if __name__ == "__main__":
     #! 1. Parse config file
     routes = parse_virtual_hosts("config/proxy.conf")
     #! 2. Build the balancer
-    balancer: dict = build_balancer(routes)
+    #balancer: dict = build_balancer(routes)
     #! 3. Pass to create_proxy
-    create_proxy(ip, port, balancer)
+    create_proxy(ip, port, routes)

@@ -23,6 +23,36 @@ Request and Response objects to handle client-server communication.
 from .request import Request
 from .response import Response
 from .dictionary import CaseInsensitiveDict
+def get_encoding_from_headers(headers):
+        """
+         Extracts encoding from Content-Type header.
+        :param headers (dict): Response headers.
+        :rtype str: Encoding (default 'utf-8').
+        """
+        content_type = headers.get('Content-Type', '')
+        if 'charset=' in content_type:
+            return content_type.split('charset=')[1].split(';')[0]
+        return 'utf-8'
+def extract_cookies(req, resp):
+        """
+        Build cookies from the :class:`Request <Request>` headers.
+
+        :param req:(Request) The :class:`Request <Request>` object.
+        :param resp: (Response) The res:class:`Response <Response>` object.
+        :rtype: cookies - A dictionary of cookie key-value pairs.
+        """
+        cookies = CaseInsensitiveDict()
+        if hasattr(req, 'headers') and req.headers:
+            cookie_header = req.headers.get('Cookie', '')
+            if cookie_header:
+                for pair in cookie_header.split(';'):
+                    pair = pair.strip()
+                    if '=' in pair:
+                        key, value = pair.split('=', 1)
+                        cookies[key] = value
+
+        
+        return cookies
 
 class HttpAdapter:
     """
@@ -106,10 +136,48 @@ class HttpAdapter:
         msg = conn.recv(1024).decode()
         req.prepare(msg, routes)
 
+        #7/11 check routes
+        if not routes:
+            print("[Error]: Routes map is empty.")
+
         # Handle request hook
         if req.hook:
             print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
-            req.hook(headers = "bksysnet",body = "get in touch")
+            return_value = req.hook(req.headers, req.body)
+            
+        body = req.body or ""
+        form = {}
+        for pair in body.split("&"):
+            if "=" in pair:
+                key, value = pair.split("=", 1)
+                form[key] = value
+
+        print(f"[HttpAdapter] Debug: Form data - username={form.get('username')}, password={form.get('password')}")  # Thêm debug
+        # Handle /login POST
+        
+        if req.path == "/login.html" and req.method == "POST":
+            print("[HttpAdapter] check login post")
+            username = form.get("username", "")
+            password = form.get("password", "")
+
+            if username == "admin" and password == "password":
+                resp.status_code = 200
+                resp.reason = "OK"
+                resp.headers["Content-Type"] = "text/html"
+                resp.headers["Set-Cookie"] = "auth=true"
+                resp._content = b"<h1>Login success</h1>"
+                req.path = "/index.html"
+            else:
+                resp.status_code = 401
+                resp.reason = "Unauthorized"
+                resp.headers["Content-Type"] = "text/html"
+                resp._content = b"<h1>401 Unauthorized</h1>"
+                req.path ="/unauthorized.html"
+
+
+            conn.sendall(resp.build_response(req))
+            conn.close()
+            return
             #
             # TODO: handle for App hook here
             #
@@ -122,22 +190,8 @@ class HttpAdapter:
         conn.close()
 
     @property
-    def extract_cookies(self, req, resp):
-        """
-        Build cookies from the :class:`Request <Request>` headers.
-
-        :param req:(Request) The :class:`Request <Request>` object.
-        :param resp: (Response) The res:class:`Response <Response>` object.
-        :rtype: cookies - A dictionary of cookie key-value pairs.
-        """
-        cookies = {}
-        for header in headers:
-            if header.startswith("Cookie:"):
-                cookie_str = header.split(":", 1)[1].strip()
-                for pair in cookie_str.split(";"):
-                    key, value = pair.strip().split("=")
-                    cookies[key] = value
-        return cookies
+    def extract_cookies(self):
+        extract_cookies( self.request, self.response)
 
     def build_response(self, req, resp):
         """Builds a :class:`Response <Response>` object 
@@ -159,7 +213,7 @@ class HttpAdapter:
             response.url = req.url
 
         # Add new cookies from the server.
-        response.cookies = extract_cookies(req)
+        response.cookies = extract_cookies(self)
 
         # Give the Response some context.
         response.request = req
@@ -207,7 +261,7 @@ class HttpAdapter:
         :param request: :class:`Request <Request>` to add headers to.
         """
         pass
-
+    
     def build_proxy_headers(self, proxy):
         """Returns a dictionary of the headers to add to any request sent
         through a proxy. 
@@ -223,9 +277,14 @@ class HttpAdapter:
         #       username, password =...
         # we provide dummy auth here
         #
+        import base64
         username, password = ("user1", "password")
-
         if username:
-            headers["Proxy-Authorization"] = (username, password)
+            auth_str = f"{username}:{password}"
+            encoded = base64.b64encode(auth_str.encode()).decode()
+            headers["Proxy-Authorization"] = f"Basic {encoded}"
+
+    # Thêm headers khác nếu cần
+        headers["Proxy-Connection"] = "Keep-Alive"
 
         return headers

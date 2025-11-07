@@ -79,6 +79,8 @@ class Request():
 
             if path == '/':
                 path = '/index.html'
+            if path == '/login':
+                path = '/login.html'
         except Exception:
             return None, None
 
@@ -102,15 +104,17 @@ class Request():
         # Prepare the request line from the request header
         self.method, self.path, self.version = self.extract_request_line(request)
         print("[Request] {} path {} version {}".format(self.method, self.path, self.version))
-
         self.url = self.path
         # @bksysnet Preapring the webapp hook with WeApRous instance
         # The default behaviour with HTTP server is empty routed
         #
         # TODO manage the webapp hook in this mounting point
-        original_headers = self.prepare_headers(request)
-        self.headers = CaseInsensitiveDict(original_headers)
+        # add by long 11/7
+        
+        #original_headers = self.prepare_headers(request)
+        self.headers = self.prepare_headers(request)
         # Msg body if any
+        
         self.body = body_part
 
         #  TODO: implement the cookie function here
@@ -136,8 +140,8 @@ class Request():
             # ...
             #
             # Try some common wildcard to return hook from routes: dict
-            if hook is None:
-                hook = routes.get(('*', self.path))
+            # Wildcard seems dangerous to be used for hook (Ngoc)
+            hook = routes.get(('*', self.path))
             if hook is None:
                 hook = routes.get((self.method, '*'))
             if hook is None:
@@ -221,24 +225,16 @@ class Request():
             # Join all parts with carriage return and newline feed
             body_bytes = b"\r\n".join(lines) + b"\r\n"
             self.body = body_bytes
-            self.prepare_content_length(self.body)
-            return self
-
         #! No files --> form-urlencoded
-        if data:
+        elif data:
             encoded = urlencode(data)
             self.headers["Content-Type"] = "application/x-www-form-urlencoded"
             self.body = encoded
-            self.prepare_content_length(self.body)
-            return self
-        # Empty body
-        self.body = None
+        #! No files and no data
+        else:
+            self.body = None
         self.prepare_content_length(self.body)
         return self
-        #   
-        # TODO prepare the request authentication
-        #
-	# self.auth = ...
 
     def prepare_content_length(self, body):
         if self.headers is None:

@@ -38,7 +38,7 @@ if __name__ == "__main__":
     and port. It then calls `create_backend(ip, port)` to start the RESTful
     application server.
 
-    :arg --server-ip (str): IP address to bind the server (default: 127.0.0.1).
+    :arg -ip (str): IP address to bind the server (default: 127.0.0.1).
     :arg --server-port (int): Port number to bind the server (default: 9000).
     """
 
