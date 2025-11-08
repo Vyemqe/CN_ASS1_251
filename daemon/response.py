@@ -311,11 +311,12 @@ class Response():
             base_dir = self.prepare_content_type(mime_type = 'text/html')
         elif mime_type == 'text/css':
             base_dir = self.prepare_content_type(mime_type = 'text/css')
-        # No addition for now
+        elif mime_type.startswith('image/'):
+            base_dir = self.prepare_content_type(mime_type = mime_type)
         else:
             print("[Response] wrong")
             return self.build_notfound()
-
+        print("[BASEDIR] : "+ base_dir) #for debug
         c_len, self._content = self.build_content(path, base_dir)
         self._header = self.build_response_header(request)
 
