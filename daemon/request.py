@@ -79,6 +79,8 @@ class Request():
 
             if path == '/':
                 path = '/index.html'
+            if path == '/login':
+                path = '/login.html'
         except Exception:
             return None, None
 
@@ -102,15 +104,17 @@ class Request():
         # Prepare the request line from the request header
         self.method, self.path, self.version = self.extract_request_line(request)
         print("[Request] {} path {} version {}".format(self.method, self.path, self.version))
-
         self.url = self.path
         # @bksysnet Preapring the webapp hook with WeApRous instance
         # The default behaviour with HTTP server is empty routed
         #
         # TODO manage the webapp hook in this mounting point
-        original_headers = self.prepare_headers(request)
-        self.headers = CaseInsensitiveDict(original_headers)
+        # add by long 11/7
+        
+        #original_headers = self.prepare_headers(request)
+        self.headers = self.prepare_headers(request)
         # Msg body if any
+        
         self.body = body_part
 
         #  TODO: implement the cookie function here

@@ -194,9 +194,8 @@ class Response():
 
         :rtype tuple: (int, bytes) representing content length and content data.
         """
-
+        
         filepath = os.path.join(base_dir, path.lstrip('/'))
-
         print("[Response] serving the object at location {}".format(filepath))
             #
             #  TODO: implement the step of fetch the object file
@@ -260,7 +259,7 @@ class Response():
             #
         if "Set-Cookie" in rsphdr:
             headers["Set-Cookie"] = rsphdr["Set-Cookie"]
-            headers["Cookie"] = reqhdr["Cookie"]
+            headers["Cookie"] = reqhdr.get("Cookie", "")
         status_line = "{} {} {}\r\n".format(request.version, self.status_code, self.reason)
         header_lines = "".join("{}: {}\r\n".format(key, value) for key, value in headers.items())
         fmt_header = status_line + header_lines + "\r\n"
@@ -299,6 +298,7 @@ class Response():
         mime_type = self.get_mime_type(path)
         print("[Response] {} path {} mime_type {}".format(request.method, request.path, mime_type))
         if not mime_type:
+            print("[Response] mine_type wrong")
             return self.build_notfound()
         base_dir = ""
 
@@ -306,14 +306,17 @@ class Response():
         #
         # TODO: add support objects
         #
+        print(path +" ---- " + mime_type)
         if path.endswith('.html') or mime_type == 'text/html':
             base_dir = self.prepare_content_type(mime_type = 'text/html')
         elif mime_type == 'text/css':
             base_dir = self.prepare_content_type(mime_type = 'text/css')
-        # No addition for now
+        elif mime_type.startswith('image/'):
+            base_dir = self.prepare_content_type(mime_type = mime_type)
         else:
+            print("[Response] wrong")
             return self.build_notfound()
-
+        print("[BASEDIR] : "+ base_dir) #for debug
         c_len, self._content = self.build_content(path, base_dir)
         self._header = self.build_response_header(request)
 
