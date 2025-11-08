@@ -137,9 +137,31 @@ class HttpAdapter:
         req.prepare(msg, routes)
 
         #7/11 check routes
-        if not routes:
-            print("[Error]: Routes map is empty.")
+        #if not routes:
+        #    print("[Error]: Routes map is empty.")
 
+        # check cookie
+        if req.path == '/index.html' and req.method == 'GET':
+            print("CHECK COOKIE")
+            if req.cookies and req.cookies.get('auth') == 'true':
+                # Phục vụ index.html
+                resp.status_code = 200
+                resp.reason = "OK"
+                resp.headers["Content-Type"] = "text/html"
+                resp._content = b"<h1>Auth=true</h1>"
+                req.path = '/index.html'  # Chuyển hướng nội bộ
+                response = resp.build_response(req)
+            else:
+                # 401 Unauthorized
+                resp.status_code = 401
+                resp.reason = 'Unauthorized'
+                resp.headers['Content-Type'] = 'text/html'
+                resp._content = b'<h1>401 Unauthorized.</h1>'
+                req.path ="/unauthorized.html"
+                response = resp.build_response(req)
+            conn.sendall(response)
+            conn.close()
+            return
         # Handle request hook
         if req.hook:
             print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
@@ -171,6 +193,7 @@ class HttpAdapter:
                 resp.status_code = 401
                 resp.reason = "Unauthorized"
                 resp.headers["Content-Type"] = "text/html"
+                resp.headers["Set-Cookie"] = "auth=false"
                 resp._content = b"<h1>401 Unauthorized</h1>"
                 req.path ="/unauthorized.html"
 
@@ -181,8 +204,7 @@ class HttpAdapter:
             #
             # TODO: handle for App hook here
             #
-
-        # Build response
+        
         response = resp.build_response(req)
 
         #print(response)
