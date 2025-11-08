@@ -40,7 +40,7 @@ Requirements:
 import argparse
 import re
 from urllib.parse import urlparse
-from collections.abc import defaultdict
+# from collections import defaultdict
 
 from daemon import create_proxy
 
@@ -61,10 +61,9 @@ def parse_virtual_hosts(config_file):
     # Match each host block
     # host "<IP in here>" {<code block>}
     host_blocks = re.findall(r'host\s+"([^"]+)"\s*\{(.*?)\}', config_text, re.DOTALL)
-
+    routes = {}
     # dist_policy_map = ""
 
-    routes = {}
     for host, block in host_blocks:
         # proxy_map = {}      # Dictionary {key: host, value: [proxy_pass]}
 
@@ -74,12 +73,14 @@ def parse_virtual_hosts(config_file):
         # map = map + proxy_passes
         # proxy_map[host] = map
 
-        # Find dist_policy if present
-        policy_match = re.search(r'dist_policy\s+(\w+)', block)
+        # Find dist_policy if any
+        policy_match = re.search(r'dist_policy\s+([\w-]+)', block)
+        # [\w-]: includes a-z, A-Z, 0-9, _ and -
+        # +: one or more characters
         if policy_match:
             dist_policy_map = policy_match.group(1)
         else: #default policy is round_robin
-            dist_policy_map = 'round-robin'
+            dist_policy_map = "round-robin"
             
         #
         # @bksysnet: Build the mapping and policy
@@ -98,12 +99,12 @@ def parse_virtual_hosts(config_file):
         #     routes[host] = (proxy_map.get(host,[]), dist_policy_map)
         if (len(proxy_passes) == 1):        # 1 proxy
             routes[host] = (proxy_passes[0], dist_policy_map)
-        else:                               # multiple proxies
+        elif (len(proxy_passes) > 1):       # multiple proxies
             routes[host] = (proxy_passes, dist_policy_map)
-    # print("Loaded virtual proxy routes:")
-    # for host, (targets, policy) in routes.items():
-    #     print("{} -> {}, policy: {}".format(host, targets, policy))
-    print("{} ({}, {})").format(host, routes[host], dist_policy_map)
+        # print("Loaded virtual proxy routes:")
+        # for host, (targets, policy) in routes.items():
+        #     print("{} -> {}, policy: {}".format(host, targets, policy))
+        print("{} {}".format(host, routes[host]))
     return routes
 
     # for key, value in routes.items():

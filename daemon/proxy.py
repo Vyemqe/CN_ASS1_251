@@ -157,7 +157,7 @@ def handle_client(ip, port, conn, addr, routes):
         print("Not a valid integer")
 
     if resolved_host:
-        print("[Proxy] Host name {} is forwarded to {}:{}".format(hostname,resolved_host, resolved_port))
+        print("[Proxy] Host name {} is forwarded to {}:{}".format(hostname, resolved_host, resolved_port))
         response = forward_request(resolved_host, resolved_port, request)        
     else:
         response = (
