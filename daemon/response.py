@@ -171,7 +171,10 @@ class Response():
             elif sub_type == 'html':
                 base_dir = BASE_DIR+"www/"
         elif main_type == 'image':
-            base_dir = BASE_DIR+"static/"
+            if sub_type == 'x-icon':
+                base_dir = BASE_DIR+"static/images/"
+            else:
+                base_dir = BASE_DIR+"static/"
             self.headers['Content-Type']='image/{}'.format(sub_type)
         elif main_type == 'application':
             base_dir = BASE_DIR+"apps/"

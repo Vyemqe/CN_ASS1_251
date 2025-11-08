@@ -76,11 +76,11 @@ def parse_virtual_hosts(config_file):
         # proxy_map[host] = map
 
         # Find dist_policy if present
-        policy_match = re.search(r'dist_policy\s+(\w+)', block)
+        policy_match = re.search(r'dist_policy\s+([\w-]+)', block)
         if policy_match:
             dist_policy_map = policy_match.group(1)
         else: #default policy is round_robin
-            dist_policy_map = 'round-robin'
+            dist_policy_map = "round-robin"
             
         #
         # @bksysnet: Build the mapping and policy
@@ -106,7 +106,7 @@ def parse_virtual_hosts(config_file):
     # print("Loaded virtual proxy routes:")
     # for host, (targets, policy) in routes.items():
     #     print("{} -> {}, policy: {}".format(host, targets, policy))
-    print("{} ({}, {})".format(host, routes[host], dist_policy_map))
+        print("{} {}".format(host, routes[host]))
 
     return routes
 
