@@ -179,7 +179,7 @@ class HttpAdapter:
         print(f"[HttpAdapter] Debug: Form data - username={form.get('username')}, password={form.get('password')}")  # Thêm debug
 
         # TASK 1A: Handle /login POST
-        if req.path == "/login.html" and req.method == "POST":
+        if req.path == "/login" and req.method == "POST":
             print("[HttpAdapter] Check POST /login")
             username = form.get("username", "")
             password = form.get("password", "")
@@ -201,6 +201,14 @@ class HttpAdapter:
             conn.close()
             return
 
+        if req.path == "/hello" and req.method == "PUT":
+            print("[HttpAdapter] Handling /hello PUT")
+            resp.status_code = 200
+            resp.reason = "OK"
+            resp.headers["Content-Type"] = "text/html"
+            resp._content = b"<h1>HELLO, WORLD!</h1>"
+            req.path = "/hello.html"
+            # return_value = req.hook(req.headers, req.body)
         # Build response
         response = resp.build_response(req)
 

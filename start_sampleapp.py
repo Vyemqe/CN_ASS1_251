@@ -24,8 +24,8 @@ HTTP requests. The application includes a login endpoint and a greeting endpoint
 and can be configured via command-line arguments.
 """
 
-import json
-import socket
+# import json
+# import socket
 import argparse
 
 from daemon.weaprous import WeApRous
@@ -59,6 +59,21 @@ def hello(headers, body):
     :param body (str): The request body or message payload.
     """
     print("[SampleApp] ['PUT'] Hello in {} to {}".format(headers, body))
+
+### Add more endpoints here ###
+#! Client-Server
+#? 1. submit-info/ - PUT
+
+#? 2. add-list/ - POST
+
+#? 3. get-list/ - GET
+
+#? 4. connect/peer/ - POST
+
+#! P2P
+#? 1. broadcast-peer/ - POST
+
+#? 2. send-peer/ - PUT
 
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port
