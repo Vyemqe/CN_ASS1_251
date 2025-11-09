@@ -135,9 +135,13 @@ class HttpAdapter:
         msg = conn.recv(1024).decode()
         req.prepare(msg, routes)
 
-        #7/11 check routes
-        # if not routes:
-        #     print("[Error]: Routes map is empty.")
+        # Handle request hook
+        # if req.hook:
+        #     print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
+        #     return_value = req.hook(req.headers, req.body)
+            #
+            # TODO: handle for App hook here
+            #
 
         # TASK 1B: Handle / GET
         if req.path == "/index.html" and req.method == "GET":
@@ -149,40 +153,25 @@ class HttpAdapter:
                     resp.reason = "OK"
                     resp.headers["Content-Type"] = "text/html"
                     resp._content = b"<h1>Login success</h1>"
-                    req.path = "/index.html"
-                    response = resp.build_response(req)
             else:
                 resp.status_code = 401
                 resp.reason = "Unauthorized"
                 resp.headers["Content-Type"] = "text/html"
                 resp._content = b"<h1>401 Unauthorized</h1>"
-                req.path ="/unauthorized.html" 
-            conn.sendall(resp.build_response(req))
-            conn.close()
-            return
-
-        #
-        # TODO: handle for App hook here
-        #
-        # Handle request hook
-        if req.hook:
-            print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
-            return_value = req.hook(req.headers, req.body)
-            
-        body = req.body or ""
-        form = {}
-        for pair in body.split("&"):
-            if "=" in pair:
-                key, value = pair.split("=", 1)
-                form[key] = value
-
-        print(f"[HttpAdapter] Debug: Form data - username={form.get('username')}, password={form.get('password')}")  # Thêm debug
-
+                req.path ="/unauthorized.html"    
         # TASK 1A: Handle /login POST
-        if req.path == "/login.html" and req.method == "POST":
+        elif req.path == "/login.html" and req.method == "POST":
+            body = req.body or ""
+            form = {}
+            for pair in body.split("&"):
+                if "=" in pair:
+                    key, value = pair.split("=", 1)
+                    form[key] = value
+
             print("[HttpAdapter] Check POST /login")
             username = form.get("username", "")
             password = form.get("password", "")
+            print(f"[HttpAdapter] username={username}, password={password}")
 
             if username == "admin" and password == "password":
                 resp.status_code = 200
@@ -197,18 +186,13 @@ class HttpAdapter:
                 resp.headers["Content-Type"] = "text/html"
                 resp._content = b"<h1>401 Unauthorized</h1>"
                 req.path ="/unauthorized.html"
-            conn.sendall(resp.build_response(req))
-            conn.close()
-            return
-
-        if req.path == "/hello" and req.method == "PUT":
+        elif req.path == "/hello.html" and req.method == "PUT":
             print("[HttpAdapter] Handling /hello PUT")
             resp.status_code = 200
             resp.reason = "OK"
             resp.headers["Content-Type"] = "text/html"
             resp._content = b"<h1>HELLO, WORLD!</h1>"
-            req.path = "/hello.html"
-            # return_value = req.hook(req.headers, req.body)
+
         # Build response
         response = resp.build_response(req)
 
