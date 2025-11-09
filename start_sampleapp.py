@@ -30,12 +30,14 @@ import argparse
 
 from daemon.weaprous import WeApRous
 from daemon.networkmode import NetworkManager   # network layer
+from daemon.tracker import Tracker
+from daemon.peer import Peer
 
 PORT = 8000  # Default port
 
 app = WeApRous()
 
-tracker = []   # TODO: Place your tracker obj here!
+tracker = Tracker()   # TODO: Place your tracker obj here!
 
 @app.route('/login', methods=['POST'])
 def login(headers="guest", body="anonymous"):
@@ -66,7 +68,7 @@ def hello(headers, body):
 ### Add more endpoints here ###
 #! Client-Server
 #? 1. submit-info/ - PUT
-@app.routes('/submit-info', methods=['PUT'])
+@app.route('/submit-info', methods=['PUT'])
 def submit_info(headers, body) -> None:
     """
     Handle submission of user information: IP, port via PUT request.
@@ -79,12 +81,11 @@ def submit_info(headers, body) -> None:
     global tracker      # TODO: Change this to your tracker obj
     ip, port = body.split(':')
     peer = {'ip': ip, 'port': port}
-    if peer not in tracker:
-        tracker.append(peer)
+    tracker.register_peer(peer)
     print("[SampleApp] New peer joined: {}".format(peer))
 
 #? 2. add-list/ - POST
-@app.routes('/add-list', methods=['POST'])
+@app.route('/add-list', methods=['POST'])
 def add_list(headers, body) -> dict:
     """
     Handle adding an item to a list via POST request.
@@ -103,9 +104,8 @@ def add_list(headers, body) -> dict:
 
         added = 0
         for peer in new_peers:
-            if peer not in tracker:
-                tracker.append(peer)
-                added += 1
+            tracker.register_peer(peer)
+            added += 1
 
         print("[SampleApp] Added {} new peers via /add-list/".format(added))
         print("[SampleApp] Updated tracker: {}".format(tracker))
@@ -116,7 +116,7 @@ def add_list(headers, body) -> dict:
         return {"status": "error", "message": str(e)}
 
 #? 3. get-list/ - GET
-@app.routes('/get-list', methods = ['GET'])
+@app.route('/get-list', methods=['GET'])
 def get_list(headers, body) -> list:
     """
     Handle tracking list of peers via GET request.
@@ -127,11 +127,12 @@ def get_list(headers, body) -> list:
     :param body (str): The request body containing any parameters for retrieval.
     """
     global tracker      # TODO: Change this to your tracker obj
-    print("[SampleApp] Current list of peers: {}".format(tracker))
-    return tracker
+    peers = tracker.get_peers()
+    print("[SampleApp] Current list of peers: {}".format(peers))
+    return peers
 
 #? 4. connect/peer/ - POST
-@app.routes('/connect/peer', methods=['POST'])
+@app.route('/connect/peer', methods=['POST'])
 def connect_peer(headers, body) -> None:
     """
     Handle connecting to a peer via POST request.
@@ -145,7 +146,7 @@ def connect_peer(headers, body) -> None:
 
 #! P2P
 #? 1. broadcast-peer/ - POST
-@app.routes('/broadcast-peer', methods=['POST'])
+@app.route('/broadcast-peer', methods=['POST'])
 def broadcast_peer(headers, body) -> None:
     """
     Handle broadcasting peer information via POST request.
@@ -159,7 +160,7 @@ def broadcast_peer(headers, body) -> None:
     NetworkManager.broadcast(body)
 
 #? 2. send-peer/ - PUT
-@app.routes('/send-peer', method = ['PUT'])
+@app.route('/send-peer', methods=['PUT'])
 def send_peer(headers, body) -> None:
     """
     Handle message exchanging between peers via PUT request.

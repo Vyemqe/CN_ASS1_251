@@ -79,8 +79,8 @@ class Request():
 
             if path == '/':
                 path = '/index.html'
-            if path == '/login':
-                path = '/login.html'
+            if path in ('/login', '/hello'):
+                path = path + '.html'
         except Exception:
             return None, None
 

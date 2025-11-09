@@ -310,12 +310,10 @@ class Response():
         # TODO: add support objects
         #
         print(path +" ---- " + mime_type)
-        if path.endswith('.html') or mime_type == 'text/html':
+        if path.endswith('.html'):
             base_dir = self.prepare_content_type(mime_type = 'text/html')
-        elif mime_type == 'text/css':
-            base_dir = self.prepare_content_type(mime_type = 'text/css')
-        elif mime_type.startswith('image/'):
-            base_dir = self.prepare_content_type(mime_type = mime_type)
+        elif mime_type.startswith(('text/', 'application/', 'image/', 'video/')):
+            base_dir = self.prepare_content_type(mime_type)
         else:
             print("[Response] wrong")
             return self.build_notfound()
