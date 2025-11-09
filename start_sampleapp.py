@@ -35,6 +35,8 @@ PORT = 8000  # Default port
 
 app = WeApRous()
 
+tracker = []   # TODO: Place your tracker obj here!
+
 @app.route('/login', methods=['POST'])
 def login(headers="guest", body="anonymous"):
     """
@@ -65,7 +67,7 @@ def hello(headers, body):
 #! Client-Server
 #? 1. submit-info/ - PUT
 @app.routes('/submit-info', methods=['PUT'])
-def submit_info(headers, body):
+def submit_info(headers, body) -> None:
     """
     Handle submission of user information: IP, port via PUT request.
 
@@ -74,11 +76,16 @@ def submit_info(headers, body):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body containing user information.
     """
-    print("[SampleApp - C/S] ['PUT'] Submit info in {} to {}".format(headers, body))
+    global tracker      # TODO: Change this to your tracker obj
+    ip, port = body.split(':')
+    peer = {'ip': ip, 'port': port}
+    if peer not in tracker:
+        tracker.append(peer)
+    print("[SampleApp] New peer joined: {}".format(peer))
 
 #? 2. add-list/ - POST
 @app.routes('/add-list', methods=['POST'])
-def add_list(headers, body):
+def add_list(headers, body) -> dict:
     """
     Handle adding an item to a list via POST request.
 
@@ -87,11 +94,30 @@ def add_list(headers, body):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body containing the item to add.
     """
-    print("[SampleApp - C/S] ['POST'] Add list in {} to {}".format(headers, body))
+    # print("[SampleApp] ['POST'] Add list in {} to {}".format(headers, body))
+    global tracker      # TODO: Change this to your tracker obj
+    try:
+        # Assume JSON body: [{"ip": "192.168.1.2", "port": 9000}, ...]
+        import json
+        new_peers = json.loads(body)
+
+        added = 0
+        for peer in new_peers:
+            if peer not in tracker:
+                tracker.append(peer)
+                added += 1
+
+        print("[SampleApp] Added {} new peers via /add-list/".format(added))
+        print("[SampleApp] Updated tracker: {}".format(tracker))
+        return {"status": "success", "added": added}
+
+    except Exception as e:
+        print(f"[SampleApp] ['POST'] /add-list error: {e}")
+        return {"status": "error", "message": str(e)}
 
 #? 3. get-list/ - GET
 @app.routes('/get-list', methods = ['GET'])
-def get_list(headers, body):
+def get_list(headers, body) -> list:
     """
     Handle tracking list of peers via GET request.
 
@@ -100,11 +126,13 @@ def get_list(headers, body):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body containing any parameters for retrieval.
     """
-    print("[SampleApp - C/S] ['GET'] Get peer list in {} to {}".format(headers, body))
+    global tracker      # TODO: Change this to your tracker obj
+    print("[SampleApp] Current list of peers: {}".format(tracker))
+    return tracker
 
 #? 4. connect/peer/ - POST
 @app.routes('/connect/peer', methods=['POST'])
-def connect_peer(headers, body):
+def connect_peer(headers, body) -> None:
     """
     Handle connecting to a peer via POST request.
 
@@ -113,12 +141,12 @@ def connect_peer(headers, body):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body containing peer connection details.
     """
-    print("[SampleApp - C/S] ['POST'] Connect peer in {} to {}".format(headers, body))
+    print("[SampleApp] Connecting to peer: {}".format(body))
 
 #! P2P
 #? 1. broadcast-peer/ - POST
 @app.routes('/broadcast-peer', methods=['POST'])
-def broadcast_peer(headers, body):
+def broadcast_peer(headers, body) -> None:
     """
     Handle broadcasting peer information via POST request.
 
@@ -127,11 +155,12 @@ def broadcast_peer(headers, body):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body containing peer information to broadcast.
     """
-    print("[SampleApp - P2P] ['POST'] Broadcast peer in {} to {}".format(headers, body))
+    print("[SampleApp] Broadcasting message to all peers: {}".format(body))
+    NetworkManager.broadcast(body)
 
 #? 2. send-peer/ - PUT
 @app.routes('/send-peer', method = ['PUT'])
-def send_peer(headers, body):
+def send_peer(headers, body) -> None:
     """
     Handle message exchanging between peers via PUT request.
 
@@ -140,7 +169,8 @@ def send_peer(headers, body):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body containing peer information to send.
     """
-    print("[SampleApp - P2P] ['PUT'] Send peer in {} to {}".format(headers, body))
+    print("[SampleApp] Sending message directly to a peer: {}".format(body))
+    NetworkManager.send_to_peer(body)
 
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port
@@ -149,7 +179,7 @@ if __name__ == "__main__":
     parser.add_argument('--server-port', type=int, default=PORT)
     #! For network layer
     parser.add_argument('--mode', choices=['cs', 'p2p'], default='cs',
-                        help='Network mode: cs (Client-Server) or p2p (Peer-to-Peer).')
+                        help='Network mode: cs (Client-Server), p2p (Peer-to-Peer).')
  
     args = parser.parse_args()
     ip = args.server_ip

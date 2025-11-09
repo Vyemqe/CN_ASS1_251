@@ -179,7 +179,7 @@ class HttpAdapter:
         print(f"[HttpAdapter] Debug: Form data - username={form.get('username')}, password={form.get('password')}")  # Thêm debug
 
         # TASK 1A: Handle /login POST
-        if req.path == "/login" and req.method == "POST":
+        if req.path == "/login.html" and req.method == "POST":
             print("[HttpAdapter] Check POST /login")
             username = form.get("username", "")
             password = form.get("password", "")
