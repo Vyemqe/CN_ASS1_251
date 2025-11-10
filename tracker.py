@@ -2,7 +2,8 @@
 import socket
 import threading
 import argparse
-from datetime import datetime
+import json
+# from datetime import datetime
 
 # Storage peers: {username: (ip, port)}
 PEERS = {}
@@ -12,17 +13,12 @@ def add_peer(username, ip, port):
     with PEERS_LOCK:
         PEERS[username] = (ip, int(port))
         print(f"[Tracker] Register peer: {username} at {ip}:{port}")
-
-def get_peer(username):
-    with PEERS_LOCK:
-        return PEERS.get(username)
     
 def lookup_peer(username):
     with PEERS_LOCK:
         return PEERS.get(username)
 
 def handle_tracker_client(conn, addr):
-    import json
     try:
         data = conn.recv(1024).decode('utf-8').strip()
         if data.startswith('REGISTER:'):
