@@ -58,9 +58,19 @@ if __name__ == "__main__":
         default=PORT,
         help='Port number to bind the server. Default is {}.'.format(PORT)
     )
+    # them mode cho tracker
+    parser.add_argument(
+        '--mode',
+        type=str,
+        default='http',
+        choices=['http', 'tracker'],
+        help='Run as HTTP server or Tracker'
+    )
  
     args = parser.parse_args()
     ip = args.server_ip
     port = args.server_port
+    #routes
+    routes = {} if args.mode == 'tracker' else {}  # Mở rộng nếu cần
 
-    create_backend(ip, port)
+    create_backend(ip, port, routes)

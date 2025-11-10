@@ -89,12 +89,12 @@ def resolve_routing_policy(hostname, routes):
     """
 
     print(hostname)
-    proxy_map, policy = routes.get(hostname,('127.0.0.1:9000','round-robin'))
+    proxy_map, policy = routes.get(hostname,('127.0.0.1:8000','round-robin'))
     print(proxy_map)
     print(policy)
 
     proxy_host = ''
-    proxy_port = '9000'
+    proxy_port = '8000'
     if isinstance(proxy_map, list):
         if len(proxy_map) == 0:
             print("[Proxy] Emtpy resolved routing of hostname {}".format(hostname))
@@ -104,7 +104,7 @@ def resolve_routing_policy(hostname, routes):
             #       basic default host in your self-defined system
             # Use a dummy host to raise an invalid connection
             proxy_host = '127.0.0.1'
-            proxy_port = '9000'
+            proxy_port = '8000'
         elif len(proxy_map) == 1:
             proxy_host, proxy_port = proxy_map[0].split(":", 2)
         #elif: # apply the policy handling 
@@ -113,7 +113,7 @@ def resolve_routing_policy(hostname, routes):
         else:
             # Out-of-handle mapped host
             proxy_host = '127.0.0.1'
-            proxy_port = '9000'
+            proxy_port = '8000'
     else:
         print("[Proxy] resolve route of hostname {} is a singulair to".format(hostname))
         proxy_host, proxy_port = proxy_map.split(":", 2)
