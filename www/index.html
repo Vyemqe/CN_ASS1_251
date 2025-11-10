@@ -1,21 +1,56 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="vi">
 <head>
-    <title>bksysnet@hcmut welcome</title>
-
-    <meta charset="utf-8" />
-    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="css/styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peer Chat - Hybrid Application</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        
+    </style>
 </head>
-
 <body>
-<div>
-    <h1>bksysnet@hcmut  Domain</h1>
-    <p>This domain is for use in illustrative examples in documents.
-    </p>
-  
-       <img src="images/welcome.png" alt="bksysnet at HCMUT" width="500" height="600">  
-</div>
+    <div class="container">
+        <!-- Form submit info -->
+        <form method="POST" action="/submit_infor">
+            Username: <input name="username" type="text" placeholder="e.g., Alice"><br>
+            Port: <input name="Port" type="number" placeholder="e.g., 8001" min="1024" max="65535"><br>
+            <input type="submit" value="Submit">
+        </form>
+        
+        <div id="statusMessage"></div>
+        
+        <h2>Peer Chat: {{ name }}</h2>
+        <div class="buttons">
+            <a href="/loadpeers" class="button">Load Peers</a>
+        </div>
+
+        <ul id="peers" class="peer-list"></ul>
+
+        <hr>
+        <div class="chat-box">
+            <!-- Phần broadcast -->
+            <input id="msg" placeholder="Message..." class="msg-input">
+            <button onclick="sendMsg()">Broadcast</button>
+            <ul id="chat" class="chat-log"></ul>
+            
+            <!-- Phần nhắn riêng cho 1 peer -->
+            <div class="private-chat">
+                <h3>Nhắn Riêng Cho Peer:</h3>
+                <select id="targetPeer">
+                    <option value="">-- Chọn Peer --</option>
+                </select>
+                <input id="privateMsg" placeholder="Tin nhắn riêng...">
+                <button id="privateSendBtn" onclick="sendPrivateMsg()">Send Private</button>
+            </div>
+            
+            <!-- Ô nhận phản hồi chat từ peer khác -->
+            <div class="received-box">
+                <h3>Nhận Phản Hồi Từ Peer Khác</h3>
+                <ul id="receivedChat" class="chat-log"></ul>
+            </div>
+        </div>
+    </div>
+    <!-- <script src="/script.js"></script> -->
 </body>
 </html>

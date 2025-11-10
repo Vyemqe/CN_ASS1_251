@@ -19,10 +19,37 @@ http settings (headers, bodies). The adapter supports both
 raw URL paths and RESTful route definitions, and integrates with
 Request and Response objects to handle client-server communication.
 """
-
+import threading
+import socket
 from .request import Request
 from .response import Response
 from .dictionary import CaseInsensitiveDict
+from peer import Peer
+import json as _json 
+
+registered_users = {
+    "admin": "password",
+    "long" : "baolong987"
+}
+users_lock = threading.Lock()
+is_valid = False
+def call_tracker(command):
+    """
+    Gọi tracker qua socket TCP, gửi lệnh và nhận response.
+    :param command: Lệnh như 'REGISTER:username:ip:port' hoặc 'LOOKUP:*'
+    :return: Response string hoặc None nếu lỗi
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(('localhost', 9000))  # Port tracker
+        sock.send((command + '\n').encode('utf-8'))  
+        response = sock.recv(2048).decode('utf-8').strip()  # Nhận full response
+        sock.close()
+        print(f"[HttpAdapter] Tracker response: {response}")  # Debug
+        return response
+    except socket.error as e:
+        print(f"[HttpAdapter] Lỗi kết nối tracker: {e}")
+        return None
 def get_encoding_from_headers(headers):
         """
          Extracts encoding from Content-Type header.
@@ -53,6 +80,17 @@ def extract_cookies(req, resp):
 
         
         return cookies
+def check_and_register(username, password):
+        with users_lock:
+            if username in registered_users:
+                if registered_users[username] == password:
+                    print(f"Username '{username}' login success")
+                    return True  # Đã đăng nhập, không cần register lại
+                else:
+                    print(f"Username '{username}' login fail.")
+            else:
+                print(f"Username '{username}' chưa tồn tại, tiến hành đăng ký.")
+            return False
 
 class HttpAdapter:
     """
@@ -109,7 +147,8 @@ class HttpAdapter:
         self.request = Request()
         #: Response
         self.response = Response()
-
+    
+        
     def handle_client(self, conn, addr, routes):
         """
         Handle an incoming client connection.
@@ -139,12 +178,11 @@ class HttpAdapter:
         #7/11 check routes
         #if not routes:
         #    print("[Error]: Routes map is empty.")
-
+        #print("[MESSEGE: ]" + msg)
         # check cookie
         if req.path == '/index.html' and req.method == 'GET':
             print("CHECK COOKIE")
             if req.cookies and req.cookies.get('auth') == 'true':
-                # Phục vụ index.html
                 resp.status_code = 200
                 resp.reason = "OK"
                 resp.headers["Content-Type"] = "text/html"
@@ -173,16 +211,97 @@ class HttpAdapter:
             if "=" in pair:
                 key, value = pair.split("=", 1)
                 form[key] = value
-
-        print(f"[HttpAdapter] Debug: Form data - username={form.get('username')}, password={form.get('password')}")  # Thêm debug
+            
+        #print(f"[HttpAdapter] Debug: Form data - username={form.get('username')}, password={form.get('password')}")  # Thêm debug
         # Handle /login POST
+        if req.path == "/submit_infor" and req.method == "POST":
+            print("[HttpAdapter] Submit_infor")
+            username = form.get("username", "")
+            post_str = form.get("Port", "")
+            print("HTTP : POST" + post_str)
+            peer = Peer(username, post_str)
+            if peer.register():
+                resp.status_code = 200
+                resp.reason = "OK"
+                resp.headers["Content-Type"] = "text/html"
+                resp.headers["Set-Cookie"] = "auth=true"
+                resp._content = b"<h1>Register success</h1>"
+                req.path = "/index.html"
+            else:
+                resp.status_code = 401
+                resp.reason = "Unauthorized"
+                resp.headers["Content-Type"] = "text/html"
+                resp.headers["Set-Cookie"] = "auth=false"
+                resp._content = b"<h1>401 Unauthorized</h1>"
+                req.path ="/unauthorized.html"
+            conn.sendall(resp.build_response(req))
+            conn.close()
+            return
         
+        if req.path == "/loadpeers" and req.method == "GET":
+            import json
+            import os
+            print("[HttpAdapter] Xử lý load peers GET")
+
+            # Gọi tracker để lấy peers (LOOKUP:*)
+            tracker_response = call_tracker("LOOKUP:*")
+            peers_list = []
+            if tracker_response and tracker_response.startswith('PEERS:'):
+                try:
+                    peers_json = tracker_response[6:]  # Bỏ 'PEERS:'
+                    print(f"[HttpAdapter] Debug JSON raw: {peers_json}")
+                    peers_data = json.loads(peers_json)
+                    peers_list = peers_data.get('peers', [])
+                    print(f"[HttpAdapter] Parsed {len(peers_list)} peers: {peers_list}")
+                except json.JSONDecodeError:
+                    print("json wrong")
+                    peers_list = []
+
+                # Xây dựng danh sách HTML
+                peer_html = ""
+                if peers_list:
+                    for p in peers_list:
+                        peer_html += f'<li>{p.get("username", "Unknown")} - {p.get("ip", "N/A")}:{p.get("port", "N/A")}</li>'
+                else:
+                    peer_html = '<li>Không có peer nào hoạt động.</li>'
+
+                # Đọc template và thay thế placeholder
+                template_path = "www/loadpeer.html"
+                if os.path.exists(template_path):
+                    with open(template_path, 'r', encoding='utf-8') as f:
+                        template_html = f.read()
+                        print("open template")
+                else:
+                    template_html = '<html><body><h2>Danh Sách Peers</h2><ul id="peers"></ul></body></html>'
+
+                full_html = template_html.replace("{{PEER_COUNT}}", str(len(peers_list)))
+                full_html = full_html.replace("{{PEER_LIST}}", peer_html)
+                output_path = "www/peerlist.html"  # Path file đầu ra
+                try:
+                    with open(output_path, 'w', encoding='utf-8') as f:
+                        f.write(full_html)
+                        print(f"[HttpAdapter] Đã ghi HTML động vào {output_path} với  peers")
+                except OSError as ose:
+                    print(f"[HttpAdapter] Lỗi ghi file: {ose}")
+                
+                resp.status_code = 200
+                resp.reason = "OK"
+                resp.headers["Content-Type"] = "text/html; charset=utf-8"
+                resp._content = full_html.encode('utf-8')
+                req.path = "/peerlist.html"
+                response = resp.build_response(req)
+                conn.sendall(response)
+                conn.close()
+                return
+
         if req.path == "/login.html" and req.method == "POST":
             print("[HttpAdapter] check login post")
             username = form.get("username", "")
             password = form.get("password", "")
-
-            if username == "admin" and password == "password":
+            is_valid = check_and_register(username, password)
+            if is_valid == True:
+                # khoi tao peer neu login success
+                
                 resp.status_code = 200
                 resp.reason = "OK"
                 resp.headers["Content-Type"] = "text/html"
@@ -196,8 +315,6 @@ class HttpAdapter:
                 resp.headers["Set-Cookie"] = "auth=false"
                 resp._content = b"<h1>401 Unauthorized</h1>"
                 req.path ="/unauthorized.html"
-
-
             conn.sendall(resp.build_response(req))
             conn.close()
             return

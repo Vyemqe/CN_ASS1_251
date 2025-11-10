@@ -24,11 +24,26 @@ server's IP address and port, and then launches the backend server.
 
 import socket
 import argparse
+# task2
+import threading
 
 from daemon import create_backend
 
 # Default port number used if none is specified via command-line arguments.
 PORT = 9000 
+
+
+# Global peer storage (thread-safe)
+PEERS = {}
+PEERS_LOCK = threading.Lock()
+
+def add_peer(username, ip, port):
+    with PEERS_LOCK:
+        PEERS[username] = (ip, int(port))
+
+def get_peer(username):
+    with PEERS_LOCK:
+        return PEERS.get(username)
 
 if __name__ == "__main__":
     """
@@ -58,9 +73,19 @@ if __name__ == "__main__":
         default=PORT,
         help='Port number to bind the server. Default is {}.'.format(PORT)
     )
+    # them mode cho tracker
+    parser.add_argument(
+        '--mode',
+        type=str,
+        default='http',
+        choices=['http', 'tracker'],
+        help='Run as HTTP server or Tracker'
+    )
  
     args = parser.parse_args()
     ip = args.server_ip
     port = args.server_port
+    #routes
+    routes = {} if args.mode == 'tracker' else {}  # Mở rộng nếu cần
 
-    create_backend(ip, port)
+    create_backend(ip, port, routes)

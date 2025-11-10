@@ -166,8 +166,8 @@ class Response():
         print("[Response] processing MIME main_type={} sub_type={}".format(main_type,sub_type))
         if main_type == 'text':
             self.headers['Content-Type']='text/{}'.format(sub_type)
-            if sub_type in ('plain', 'css', 'csv', 'xml'):
-                base_dir = BASE_DIR+"static/"
+            if sub_type in ('plain', 'css', 'csv', 'xml', 'js'):
+                base_dir = BASE_DIR+"static/css/"
             elif sub_type == 'html':
                 base_dir = BASE_DIR+"www/"
         elif main_type == 'image':
@@ -309,17 +309,21 @@ class Response():
         #
         # TODO: add support objects
         #
-        print(path +" ---- " + mime_type)
+        #print(path +" ---- " + mime_type)
         if path.endswith('.html') or mime_type == 'text/html':
             base_dir = self.prepare_content_type(mime_type = 'text/html')
         elif mime_type == 'text/css':
             base_dir = self.prepare_content_type(mime_type = 'text/css')
         elif mime_type.startswith('image/'):
             base_dir = self.prepare_content_type(mime_type = mime_type)
+        elif mime_type == 'application/javascript':
+            base_dir = self.prepare_content_type(mime_type = 'text/js')
+        elif mime_type == 'application/octet-stream':
+            base_dir = ''
         else:
             print("[Response] wrong")
             return self.build_notfound()
-        print("[BASEDIR] : "+ base_dir) #for debug
+        #print("[BASEDIR] : "+ base_dir) #for debug
         c_len, self._content = self.build_content(path, base_dir)
         self._header = self.build_response_header(request)
 

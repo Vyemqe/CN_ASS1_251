@@ -27,6 +27,7 @@ and can be configured via command-line arguments.
 import json
 import socket
 import argparse
+from peer import Peer
 
 from daemon.weaprous import WeApRous
 
@@ -34,7 +35,7 @@ PORT = 8000  # Default port
 
 app = WeApRous()
 
-@app.route('/login', methods=['POST'])
+@app.route('/login.html', methods=['POST'])
 def login(headers="guest", body="anonymous"):
     """
     Handle user login via POST request.
@@ -47,7 +48,7 @@ def login(headers="guest", body="anonymous"):
     """
     print("[SampleApp] Logging in {} to {}".format(headers, body))
 
-@app.route('/hello', methods=['PUT'])
+@app.route('/', methods=['PUT'])
 def hello(headers, body):
     """
     Handle greeting via PUT request.
@@ -58,7 +59,11 @@ def hello(headers, body):
     :param headers (str): The request headers or user identifier.
     :param body (str): The request body or message payload.
     """
-    print("[SampleApp] ['PUT'] Hello in {} to {}".format(headers, body))
+    #print("[SampleApp] ['PUT'] Hello in {} to {}".format(headers, body))
+
+
+
+   
 
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port
