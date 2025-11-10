@@ -166,8 +166,8 @@ class Response():
         print("[Response] processing MIME main_type={} sub_type={}".format(main_type,sub_type))
         if main_type == 'text':
             self.headers['Content-Type']='text/{}'.format(sub_type)
-            if sub_type in ('plain', 'css', 'csv', 'xml'):
-                base_dir = BASE_DIR+"static/"
+            if sub_type in ('plain', 'css', 'csv', 'xml', 'js'):
+                base_dir = BASE_DIR+"static/css/"
             elif sub_type == 'html':
                 base_dir = BASE_DIR+"www/"
         elif main_type == 'image':
@@ -244,7 +244,7 @@ class Response():
                 "Accept-Language": "{}".format(reqhdr.get("Accept-Language", "en-US,en;q=0.9")),
                 "Authorization": "{}".format(reqhdr.get("Authorization", "Basic <credentials>")),
                 "Cache-Control": "no-cache",
-                "Content-Type": "{}".format(self.headers['Content-Type']),
+                "Content-Type": "{}".format(rsphdr['Content-Type']),
                 "Content-Length": "{}".format(len(self._content)),
 #                "Cookie": "{}".format(reqhdr.get("Cookie", "sessionid=xyz789")), #dummy cookie
                 "Date": "{}".format(datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")),
@@ -261,8 +261,7 @@ class Response():
             #        header from the provied headers
             #
         if "Set-Cookie" in rsphdr:
-            headers["Set-Cookie"] = rsphdr["Set-Cookie"]
-            headers["Cookie"] = reqhdr.get("Cookie", "")
+            headers["Set-Cookie"] = rsphdr.get("Set-Cookie", "")
         status_line = "{} {} {}\r\n".format(request.version, self.status_code, self.reason)
         header_lines = "".join("{}: {}\r\n".format(key, value) for key, value in headers.items())
         fmt_header = status_line + header_lines + "\r\n"
@@ -309,15 +308,21 @@ class Response():
         #
         # TODO: add support objects
         #
-        print(path +" ---- " + mime_type)
-        if path.endswith('.html'):
+        #print(path +" ---- " + mime_type)
+        if path.endswith('.html') or mime_type == 'text/html':
             base_dir = self.prepare_content_type(mime_type = 'text/html')
-        elif mime_type.startswith(('text/', 'application/', 'image/', 'video/')):
-            base_dir = self.prepare_content_type(mime_type)
+        elif mime_type == 'text/css':
+            base_dir = self.prepare_content_type(mime_type = 'text/css')
+        elif mime_type.startswith('image/'):
+            base_dir = self.prepare_content_type(mime_type = mime_type)
+        elif mime_type == 'application/javascript':
+            base_dir = self.prepare_content_type(mime_type = 'text/js')
+        elif mime_type == 'application/octet-stream':
+            base_dir = ''
         else:
             print("[Response] wrong")
             return self.build_notfound()
-        print("[BASEDIR] : "+ base_dir) #for debug
+        #print("[BASEDIR] : "+ base_dir) #for debug
         c_len, self._content = self.build_content(path, base_dir)
         self._header = self.build_response_header(request)
 

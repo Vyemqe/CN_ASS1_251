@@ -20,38 +20,78 @@ raw URL paths and RESTful route definitions, and integrates with
 Request and Response objects to handle client-server communication.
 """
 
+import threading
+import socket
+import base64
 from .request import Request
 from .response import Response
 from .dictionary import CaseInsensitiveDict
+from peer import Peer
+import json as _json 
+
+registered_users = {
+    "admin": "password",
+    "long" : "baolong987"
+}
+users_lock = threading.Lock()
+is_valid = False
+def call_tracker(command):
+    """
+    Gọi tracker qua socket TCP, gửi lệnh và nhận response.
+    :param command: Lệnh như 'REGISTER:username:ip:port' hoặc 'LOOKUP:*'
+    :return: Response string hoặc None nếu lỗi
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(('localhost', 9000))  # Port tracker
+        sock.send((command + '\n').encode('utf-8'))  
+        response = sock.recv(2048).decode('utf-8').strip()  # Nhận full response
+        sock.close()
+        print(f"[HttpAdapter] Tracker response: {response}")  # Debug
+        return response
+    except socket.error as e:
+        print(f"[HttpAdapter] Lỗi kết nối tracker: {e}")
+        return None
 def get_encoding_from_headers(headers):
-    """
-    Extracts encoding from Content-Type header.
-    :param headers (dict): Response headers.
-    :rtype str: Encoding (default 'utf-8').
-    """
-    content_type = headers.get('Content-Type', '')
-    if 'charset=' in content_type:
-        return content_type.split('charset=')[1].split(';')[0]
-    return 'utf-8'
-
+        """
+         Extracts encoding from Content-Type header.
+        :param headers (dict): Response headers.
+        :rtype str: Encoding (default 'utf-8').
+        """
+        content_type = headers.get('Content-Type', '')
+        if 'charset=' in content_type:
+            return content_type.split('charset=')[1].split(';')[0]
+        return 'utf-8'
 def extract_cookies(req, resp):
-    """
-    Build cookies from the :class:`Request <Request>` headers.
+        """
+        Build cookies from the :class:`Request <Request>` headers.
 
-    :param req:(Request) The :class:`Request <Request>` object.
-    :param resp: (Response) The res:class:`Response <Response>` object.
-    :rtype: cookies - A dictionary of cookie key-value pairs.
-    """
-    cookies = CaseInsensitiveDict()
-    if hasattr(req, 'headers') and req.headers:
-        cookie_header = req.headers.get('Cookie', '')
-        if cookie_header:
-            for pair in cookie_header.split(';'):
-                pair = pair.strip()
-                if '=' in pair:
-                    key, value = pair.split('=', 1)
-                    cookies[key] = value
-    return cookies
+        :param req:(Request) The :class:`Request <Request>` object.
+        :param resp: (Response) The res:class:`Response <Response>` object.
+        :rtype: cookies - A dictionary of cookie key-value pairs.
+        """
+        cookies = CaseInsensitiveDict()
+        if hasattr(req, 'headers') and req.headers:
+            cookie_header = req.headers.get('Cookie', '')
+            if cookie_header:
+                for pair in cookie_header.split(';'):
+                    pair = pair.strip()
+                    if '=' in pair:
+                        key, value = pair.split('=', 1)
+                        cookies[key] = value
+        return cookies
+
+def check_and_register(username, password):
+        with users_lock:
+            if username in registered_users:
+                if registered_users[username] == password:
+                    print(f"Username '{username}' login success")
+                    return True  # Đã đăng nhập, không cần register lại
+                else:
+                    print(f"Username '{username}' login fail.")
+            else:
+                print(f"Username '{username}' chưa tồn tại, tiến hành đăng ký.")
+            return False
 
 class HttpAdapter:
     """
@@ -288,7 +328,6 @@ class HttpAdapter:
         #       username, password =...
         # we provide dummy auth here
         #
-        import base64
         username, password = ("user1", "password")
         if username:
             auth_str = f"{username}:{password}"
