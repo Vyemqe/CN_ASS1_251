@@ -36,10 +36,13 @@ class Peer:
         Đăng ký với tracker (tương ứng fetch('/register')).
         Gửi lệnh REGISTER qua socket TCP.
         """
-        peers = self.load_peers()
-        for _, peer_port in peers:
+        self.load_peers()
+        for peer_username, (_, peer_port) in self.peers.items():
             if self.listen_port == peer_port:
                 print("peer res:  NAK:Port is unavailable. Please choose a different Port.")
+                return False
+            if self.username == peer_username:
+                print("peer res: NAK:Name is taken. Please choose a different Name.")
                 return False
         if self.listen_port == self.tracker_port:
             print("peer res:  NAK:Port is unavailable. Please choose a different Port.")
@@ -205,11 +208,11 @@ class Peer:
                 if self.running:
                     print(f"[Peer {self.username}] Lỗi accept: {e}")
     
-    def run_cli(self):
+    def run_cli(self, reg_flag):
         """
         Hỗ trợ lệnh: register, load_peers, send <target> <msg>, messages, quit.
         """
-        if not self.register():
+        if not reg_flag:
             return
         self.start_listener()
         print(f"[Peer {self.username}] Sẵn sàng. Lệnh: register | load_peers |broadcast <msg>| send <target> <msg> | messages | quit")
@@ -259,7 +262,8 @@ if __name__ == "__main__":
     
     # Test tự động: Đăng ký, load peers, gửi tin nhắn mẫu (nếu có target)
     print("Bước 1: Đăng ký với tracker...")
-    if peer.register():
+    reg_flag = peer.register()
+    if reg_flag:
         print("Bước 2: Load danh sách peers...")
         peers = peer.load_peers()
         print(f"Tìm thấy {len(peers)} peers: {peers}")
@@ -276,6 +280,6 @@ if __name__ == "__main__":
         
         # Chạy CLI để test tương tác
         print("\nChạy CLI test (gõ 'quit' để thoát)...")
-        peer.run_cli()
+        peer.run_cli(reg_flag)
     else:
         print("Lỗi đăng ký, không thể test.")
